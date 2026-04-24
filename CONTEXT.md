@@ -117,9 +117,10 @@ Branch actual: main (feat/auth-register ya mergeada)
 - POST /api/v1/auth/login 🔄
   - LoginDto creado ✅
   - JwtService instalado (@nestjs/jwt) ✅
-  - Método login en AuthService: escribiendo ahora
-  - Pendiente: agregar JwtModule al AuthModule
-  - Pendiente: endpoint en AuthController
+  - Método login en AuthService: completo ✅
+  - Endpoint en AuthController: completo ✅ (@HttpCode cambiado a HttpStatus.OK)
+  - Pendiente: configurar JwtModule.register() en AuthModule con JWT_SECRET
+  - Pendiente: verificar que JWT_SECRET existe en .env
   - Pendiente: probar en Postman
 
 ### Endpoints pendientes
@@ -146,6 +147,12 @@ auth.service.ts → register ✅, login 🔄
 auth.module.ts → imports PrismaModule
 app.module.ts → imports PrismaModule, AuthModule
 main.ts → ValidationPipe global
+
+## Cambios pendientes para próxima sesión
+
+- `auth.module.ts`: cambiar `JwtModule` por `JwtModule.register({ secret: process.env.JWT_SECRET, signOptions: { algorithm: 'HS256' } })`
+- Verificar que `.env` tiene `JWT_SECRET` definido
+- Probar POST /api/v1/auth/login en Postman
 
 ## Decisiones técnicas tomadas
 
