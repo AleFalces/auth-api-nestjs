@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xxd \"/c/Users/Alexis/OneDrive/Desktop/My/Developer/proyect/auth-api-nestjs/CONTEX.md\")",
+      "Bash(npx prisma *)"
+    ]
+  }
+}
