@@ -143,8 +143,8 @@ dto/
 register.dto.ts → IsEmail, MinLength(8), IsString
 login.dto.ts → IsEmail, MinLength(8)
 auth.controller.ts → @Controller('api/v1/auth')
-auth.service.ts → register ✅, login 🔄
-auth.module.ts → imports PrismaModule
+auth.service.ts → register ✅, login ✅
+auth.module.ts → imports PrismaModule, JwtModule (pendiente .register())
 app.module.ts → imports PrismaModule, AuthModule
 main.ts → ValidationPipe global
 
