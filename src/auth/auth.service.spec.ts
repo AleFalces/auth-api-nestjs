@@ -1,8 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+
+jest.mock('bcrypt');
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -21,6 +24,8 @@ describe('AuthService', () => {
             },
             refreshToken: {
               create: jest.fn(),
+              findUnique: jest.fn(),
+              delete: jest.fn(),
             },
           },
         },
@@ -52,6 +57,7 @@ describe('AuthService', () => {
         }),
       ).rejects.toThrow(ConflictException);
     });
+
     it('should create a user and return data without password', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
@@ -59,7 +65,7 @@ describe('AuthService', () => {
         id: 'cuid-465',
         email: 'nuevo@example.com',
         name: 'Nuevo',
-        role: ' USER',
+        role: 'USER',
         isActive: true,
         createdAt: new Date(),
       });
@@ -71,6 +77,106 @@ describe('AuthService', () => {
       });
       expect(result.email).toBe('nuevo@example.com');
       expect(result).not.toHaveProperty('password');
+    });
+  });
+  describe('login', () => {
+    it('should throw UnauthorizedException if email does not exist', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.login({
+          email: 'ale@example.com',
+          password: 'MiPassword123!',
+        }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should throw UnauthorizedException if password is incorrect', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'cuid-123',
+        email: 'ale@example.com',
+        password: 'hashed-password',
+        role: 'USER',
+      });
+
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false as never);
+
+      await expect(
+        service.login({
+          email: 'ale@example.com',
+          password: 'password-incorrecto',
+        }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should return accessToken and refreshToken when credentials are valid', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'cuid-123',
+        email: 'ale@example.com',
+        password: 'hashed-password',
+        role: 'USER',
+      });
+
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
+
+      prisma.refreshToken.create.mockResolvedValue({});
+
+      const result = await service.login({
+        email: 'ale@example.com',
+        password: 'MiPassword123!',
+      });
+
+      expect(result).toHaveProperty('accessToken');
+      expect(result).toHaveProperty('refreshToken');
+    });
+  });
+
+  describe('refresh', () => {
+    it('should throw UnauthorizedException if refresh token does not exist', async () => {
+      prisma.refreshToken.findUnique.mockResolvedValue(null);
+
+      await expect(service.refresh('invalid-token')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException if refresh token is expired', async () => {
+      prisma.refreshToken.findUnique.mockResolvedValue({
+        id: 'rt-1',
+        token: 'valid-token',
+        userId: 'cuid-123',
+        expiresAt: new Date(Date.now() - 1000),
+      });
+
+      await expect(service.refresh('valid-token')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should return new accessToken and refreshToken and delete the old one', async () => {
+      prisma.refreshToken.findUnique.mockResolvedValue({
+        id: 'rt-1',
+        token: 'valid-token',
+        userId: 'cuid-123',
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60),
+      });
+
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'cuid-123',
+        email: 'ale@example.com',
+        role: 'USER',
+      });
+
+      prisma.refreshToken.delete.mockResolvedValue({});
+      prisma.refreshToken.create.mockResolvedValue({});
+
+      const result = await service.refresh('valid-token');
+
+      expect(result).toHaveProperty('accessToken');
+      expect(result).toHaveProperty('refreshToken');
+      expect(prisma.refreshToken.delete).toHaveBeenCalledWith({
+        where: { id: 'rt-1' },
+      });
     });
   });
 });

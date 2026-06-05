@@ -6,6 +6,7 @@
 - Prisma 5.22.0 + PostgreSQL
 - bcrypt para hashing de passwords
 - class-validator + class-transformer para validaciones
+- @nestjs/jwt para generación y verificación de tokens JWT
 
 ## Reglas
 

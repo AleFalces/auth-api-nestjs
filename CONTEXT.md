@@ -1,86 +1,6 @@
-# Estado actual del proyecto
-
-## Fecha: 2026-04-23
-
-## Lo que está funcionando
-
-- NestJS instalado y configurado
-- Prisma 5.22.0 conectado a PostgreSQL en Docker
-- Migración `init` aplicada (tablas User y RefreshToken)
-- docker-compose.yml configurado con postgres en puerto 5432
-
-## Estado actual: 2026-04-23
-
-- Todos los archivos reconstruidos con Claude Code
-- Pendiente: verificar que el servidor levanta sin errores
-- Pendiente: probar POST /api/v1/auth/register con Postman
-- Pendiente: primer commit limpio a la branch feat/auth-register
-
-## Lo que se reconstruyó
-
-### src/main.ts
-
-- NestFactory.create(AppModule)
-- Puerto: process.env.PORT ?? 3000
-- ValidationPipe global con whitelist: true y forbidNonWhitelisted: true
-
-### src/app.module.ts
-
-- Importa solo PrismaModule y AuthModule
-
-### src/prisma/prisma.service.ts
-
-- Extiende PrismaClient
-- Implementa OnModuleInit con $connect()
-
-### src/prisma/prisma.module.ts
-
-- providers: [PrismaService]
-- exports: [PrismaService]
-
-### src/auth/dto/register.dto.ts
-
-- email: @IsEmail()
-- password: @MinLength(8)
-- name: @IsString()
-
-### src/auth/auth.service.ts
-
-- Inyecta PrismaService
-- Método register(dto: RegisterDto):
-  - Busca usuario por email con findUnique
-  - Si existe: throw ConflictException('Email already registered')
-  - Hashea password con bcrypt.hash(dto.password, 10)
-  - Crea usuario con prisma.user.create
-  - Usa select explícito: id, email, name, role, isActive, createdAt
-  - No devuelve password nunca
-
-### src/auth/auth.controller.ts
-
-- @Controller('api/v1/auth')
-- Inyecta AuthService
-- POST 'register' con @HttpCode(HttpStatus.CREATED)
-- Recibe @Body() dto: RegisterDto
-- Llama a authService.register(dto)
-
-### src/auth/auth.module.ts
-
-- controllers: [AuthController]
-- providers: [AuthService]
-- imports: [PrismaModule]
-
-## Lo que NO hay que tocar
-
-- tsconfig.json
-- package.json
-- prisma/schema.prisma
-- docker-compose.yml
-- .env
-- .gitignore
-
 # Auth API NestJS — Estado del proyecto
 
-## Fecha: 2026-04-24
+## Fecha: 2026-06-05
 
 ## Contexto del plan
 
@@ -101,7 +21,7 @@ Regla clave: modo 1 de Claude Code (aprendizaje) — no delegar lógica de negoc
 ## Estado actual del proyecto
 
 Repo: https://github.com/AleFalces/auth-api-nestjs
-Branch actual: main (feat/auth-register ya mergeada)
+Branch actual: main
 
 ### Endpoints completados
 
@@ -112,16 +32,14 @@ Branch actual: main (feat/auth-register ya mergeada)
   - select explícito sin exponer password
   - Probado y funcionando en Postman
 
-### Endpoints en curso
-
-- POST /api/v1/auth/login 🔄
-  - LoginDto creado ✅
-  - JwtService instalado (@nestjs/jwt) ✅
-  - Método login en AuthService: completo ✅
-  - Endpoint en AuthController: completo ✅ (@HttpCode cambiado a HttpStatus.OK)
-  - Pendiente: configurar JwtModule.register() en AuthModule con JWT_SECRET
-  - Pendiente: verificar que JWT_SECRET existe en .env
-  - Pendiente: probar en Postman
+- POST /api/v1/auth/login ✅
+  - LoginDto creado
+  - Método login en AuthService completo
+  - Endpoint en AuthController completo (@HttpCode HttpStatus.OK)
+  - JwtModule.register() configurado en AuthModule con JWT_SECRET
+  - Access token: 15min, Refresh token: 30 días
+  - RefreshToken guardado en DB
+  - Pendiente: verificar JWT_SECRET en .env y probar en Postman
 
 ### Endpoints pendientes
 
@@ -135,24 +53,36 @@ Branch actual: main (feat/auth-register ya mergeada)
 ## Estructura de archivos
 
 src/
-prisma/
-prisma.module.ts → providers + exports PrismaService
-prisma.service.ts → extends PrismaClient, OnModuleInit
-auth/
-dto/
-register.dto.ts → IsEmail, MinLength(8), IsString
-login.dto.ts → IsEmail, MinLength(8)
-auth.controller.ts → @Controller('api/v1/auth')
-auth.service.ts → register ✅, login ✅
-auth.module.ts → imports PrismaModule, JwtModule (pendiente .register())
-app.module.ts → imports PrismaModule, AuthModule
-main.ts → ValidationPipe global
+  prisma/
+    prisma.module.ts → providers + exports PrismaService
+    prisma.service.ts → extends PrismaClient, OnModuleInit
+  auth/
+    dto/
+      register.dto.ts → IsEmail, MinLength(8), IsString
+      login.dto.ts → IsEmail, MinLength(8)
+    auth.controller.ts → @Controller('api/v1/auth'), register + login
+    auth.service.ts → register ✅, login ✅
+    auth.module.ts → imports PrismaModule, JwtModule.register() ✅
+    auth.service.spec.ts → tests register ✅, tests login (parcial, falta happy path)
+  app.module.ts → imports PrismaModule, AuthModule
+  main.ts → ValidationPipe global
 
-## Cambios pendientes para próxima sesión
+## Próximos pasos
 
-- `auth.module.ts`: cambiar `JwtModule` por `JwtModule.register({ secret: process.env.JWT_SECRET, signOptions: { algorithm: 'HS256' } })`
-- Verificar que `.env` tiene `JWT_SECRET` definido
-- Probar POST /api/v1/auth/login en Postman
+1. Verificar que `.env` tiene `JWT_SECRET` definido
+2. Probar POST /api/v1/auth/login en Postman
+3. Completar test del happy path del login en auth.service.spec.ts
+4. Implementar POST /api/v1/auth/refresh
+
+## Metodología de testing
+
+- Un test a la vez: escribir un test → Red → implementar → Green → siguiente test
+- No escribir múltiples tests juntos antes de implementar
+
+## Pendientes (más adelante)
+
+- Integration testing: tests contra la DB real de Docker (no mockeada)
+  → Requiere setup separado, archivo e2e, DB de test levantada
 
 ## Decisiones técnicas tomadas
 

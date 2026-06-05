@@ -44,6 +44,46 @@ export class AuthService {
     });
   }
 
+  async refresh(token: string) {
+    const stored = await this.prisma.refreshToken.findUnique({
+      where: { token },
+    });
+
+    if (!stored) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    if (stored.expiresAt < new Date()) {
+      throw new UnauthorizedException('Refresh token expired');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: stored.userId },
+    });
+
+    await this.prisma.refreshToken.delete({ where: { id: stored.id } });
+
+    const accessToken = this.jwtService.sign(
+      { sub: user.id, email: user.email, role: user.role },
+      { expiresIn: '15m' },
+    );
+
+    const newRefreshToken = this.jwtService.sign(
+      { sub: user.id },
+      { expiresIn: '30d' },
+    );
+
+    await this.prisma.refreshToken.create({
+      data: {
+        token: newRefreshToken,
+        userId: user.id,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    return { accessToken, refreshToken: newRefreshToken };
+  }
+
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
