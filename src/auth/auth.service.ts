@@ -93,6 +93,10 @@ export class AuthService {
       where: { id: stored.userId },
     });
 
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
     await this.prisma.refreshToken.delete({ where: { id: stored.id } });
 
     const accessToken = this.jwtService.sign(

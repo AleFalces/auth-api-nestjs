@@ -33,4 +33,19 @@ describe('JwtAuthGuard', () => {
       guard.canActivate(buildContext({ authorization: 'Bearer bad-token' })),
     ).toThrow(UnauthorizedException);
   });
+
+  it('should attach payload to request and return true if token is valid', () => {
+    const payload = { sub: 'cuid-123', email: 'ale@example.com', role: 'USER' };
+    jwtService.verify.mockReturnValue(payload);
+
+    const request: any = { headers: { authorization: 'Bearer valid-token' } };
+    const context = {
+      switchToHttp: () => ({ getRequest: () => request }),
+    } as unknown as ExecutionContext;
+
+    const result = guard.canActivate(context);
+
+    expect(result).toBe(true);
+    expect(request.user).toEqual(payload);
+  });
 });
