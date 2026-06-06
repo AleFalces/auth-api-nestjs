@@ -16,6 +16,7 @@ describe('UsersService', () => {
           useValue: {
             user: {
               findUnique: jest.fn(),
+              update: jest.fn(),
               delete: jest.fn(),
             },
           },
@@ -49,6 +50,33 @@ describe('UsersService', () => {
       const result = await service.findById('cuid-123');
 
       expect(result.email).toBe('ale@example.com');
+      expect(result).not.toHaveProperty('password');
+    });
+  });
+
+  describe('update', () => {
+    it('should throw NotFoundException if user does not exist', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.update('non-existent-id', { name: 'Nuevo' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should update and return user data without password', async () => {
+      prisma.user.findUnique.mockResolvedValue({ id: 'cuid-123' });
+      prisma.user.update.mockResolvedValue({
+        id: 'cuid-123',
+        email: 'ale@example.com',
+        name: 'Nombre Actualizado',
+        role: 'USER',
+        isActive: true,
+        createdAt: new Date(),
+      });
+
+      const result = await service.update('cuid-123', { name: 'Nombre Actualizado' });
+
+      expect(result.name).toBe('Nombre Actualizado');
       expect(result).not.toHaveProperty('password');
     });
   });
