@@ -27,6 +27,32 @@ describe('UsersService', () => {
     prisma = module.get<PrismaService>(PrismaService);
   });
 
+  describe('findById', () => {
+    it('should throw NotFoundException if user does not exist', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(service.findById('non-existent-id')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should return user data without password', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'cuid-123',
+        email: 'ale@example.com',
+        name: 'Alexis',
+        role: 'USER',
+        isActive: true,
+        createdAt: new Date(),
+      });
+
+      const result = await service.findById('cuid-123');
+
+      expect(result.email).toBe('ale@example.com');
+      expect(result).not.toHaveProperty('password');
+    });
+  });
+
   describe('delete', () => {
     it('should throw NotFoundException if user does not exist', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
