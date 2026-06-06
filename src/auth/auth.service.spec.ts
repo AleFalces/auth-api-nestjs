@@ -131,6 +131,34 @@ describe('AuthService', () => {
     });
   });
 
+  describe('logout', () => {
+    it('should throw UnauthorizedException if refresh token does not exist', async () => {
+      prisma.refreshToken.findUnique.mockResolvedValue(null);
+
+      await expect(service.logout('invalid-token')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should delete the refresh token and return nothing', async () => {
+      prisma.refreshToken.findUnique.mockResolvedValue({
+        id: 'rt-1',
+        token: 'valid-token',
+        userId: 'cuid-123',
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60),
+      });
+
+      prisma.refreshToken.delete.mockResolvedValue({});
+
+      const result = await service.logout('valid-token');
+
+      expect(result).toBeUndefined();
+      expect(prisma.refreshToken.delete).toHaveBeenCalledWith({
+        where: { id: 'rt-1' },
+      });
+    });
+  });
+
   describe('refresh', () => {
     it('should throw UnauthorizedException if refresh token does not exist', async () => {
       prisma.refreshToken.findUnique.mockResolvedValue(null);
