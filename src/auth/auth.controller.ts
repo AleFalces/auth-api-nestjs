@@ -5,6 +5,8 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { RolesGuard } from './roles.guard';
+import { Roles } from './roles.decorator';
 import { CurrentUser } from './current-user.decorator';
 
 @Controller('api/v1/auth')
@@ -39,5 +41,12 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   me(@CurrentUser() user: { sub: string }) {
     return this.authService.me(user.sub);
+  }
+
+  @Get('admin')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  admin() {
+    return { message: 'Admin access granted' };
   }
 }
