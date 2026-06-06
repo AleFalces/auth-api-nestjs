@@ -159,6 +159,32 @@ describe('AuthService', () => {
     });
   });
 
+  describe('me', () => {
+    it('should throw UnauthorizedException if user does not exist', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(service.me('non-existent-id')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should return user data without password', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'cuid-123',
+        email: 'ale@example.com',
+        name: 'Alexis',
+        role: 'USER',
+        isActive: true,
+        createdAt: new Date(),
+      });
+
+      const result = await service.me('cuid-123');
+
+      expect(result.email).toBe('ale@example.com');
+      expect(result).not.toHaveProperty('password');
+    });
+  });
+
   describe('refresh', () => {
     it('should throw UnauthorizedException if refresh token does not exist', async () => {
       prisma.refreshToken.findUnique.mockResolvedValue(null);
