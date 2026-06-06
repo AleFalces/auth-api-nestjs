@@ -1,6 +1,6 @@
 # Auth API NestJS — Estado del proyecto
 
-## Fecha: 2026-06-05
+## Fecha: 2026-06-06
 
 ## Contexto del plan
 
@@ -26,86 +26,76 @@ Branch actual: main
 ### Endpoints completados
 
 - POST /api/v1/auth/register ✅
-  - Validaciones con class-validator
-  - Hash de password con bcrypt
-  - ConflictException si email duplicado
-  - select explícito sin exponer password
-  - Probado y funcionando en Postman
-
 - POST /api/v1/auth/login ✅
-  - LoginDto creado
-  - Método login en AuthService completo
-  - Endpoint en AuthController completo (@HttpCode HttpStatus.OK)
-  - JwtModule.register() configurado en AuthModule con JWT_SECRET
-  - Access token: 15min, Refresh token: 30 días
-  - RefreshToken guardado en DB
-  - Pendiente: verificar JWT_SECRET en .env y probar en Postman
+- POST /api/v1/auth/refresh ✅ (con rotación de refresh token)
+- POST /api/v1/auth/logout ✅
+- GET  /api/v1/auth/me ✅ (protegido con JwtAuthGuard)
+- GET  /api/v1/auth/admin ✅ (protegido con JwtAuthGuard + RolesGuard, rol ADMIN)
 
 ### Endpoints pendientes
 
-- POST /api/v1/auth/refresh
-- POST /api/v1/auth/logout
-- GET /api/v1/auth/me
-- GET /api/v1/users/:id
-- PATCH /api/v1/users/:id
+- GET    /api/v1/users/:id
+- PATCH  /api/v1/users/:id
 - DELETE /api/v1/users/:id
 
 ## Estructura de archivos
 
 src/
   prisma/
-    prisma.module.ts → providers + exports PrismaService
-    prisma.service.ts → extends PrismaClient, OnModuleInit
+    prisma.module.ts
+    prisma.service.ts
   auth/
     dto/
-      register.dto.ts → IsEmail, MinLength(8), IsString
-      login.dto.ts → IsEmail, MinLength(8)
-    auth.controller.ts → @Controller('api/v1/auth'), register + login
-    auth.service.ts → register ✅, login ✅
-    auth.module.ts → imports PrismaModule, JwtModule.register() ✅
-    auth.service.spec.ts → tests register ✅, tests login (parcial, falta happy path)
-  app.module.ts → imports PrismaModule, AuthModule
+      register.dto.ts
+      login.dto.ts
+      refresh.dto.ts
+    auth.controller.ts
+    auth.service.ts
+    auth.module.ts
+    auth.service.spec.ts       → 12 tests (register, login, logout, refresh, me)
+    jwt-auth.guard.ts          → verifica Bearer token, adjunta payload al request
+    jwt-auth.guard.spec.ts     → 3 tests
+    roles.guard.ts             → verifica rol requerido vía @Roles()
+    roles.guard.spec.ts        → 3 tests
+    roles.decorator.ts         → @Roles(...roles)
+    current-user.decorator.ts  → @CurrentUser() extrae user del request
+  app.module.ts
   main.ts → ValidationPipe global
 
-## Próximos pasos
+## Tests
 
-1. Verificar que `.env` tiene `JWT_SECRET` definido
-2. Probar POST /api/v1/auth/login en Postman
-3. Completar test del happy path del login en auth.service.spec.ts
-4. Implementar POST /api/v1/auth/refresh
+- auth.service.spec.ts: 12 tests
+- jwt-auth.guard.spec.ts: 3 tests
+- roles.guard.spec.ts: 3 tests
+- Total: 18 tests ✅
 
-## Metodología de testing
+## Tokens
 
-- Un test a la vez: escribir un test → Red → implementar → Green → siguiente test
-- No escribir múltiples tests juntos antes de implementar
-
-## Pendientes (más adelante)
-
-- Integration testing: tests contra la DB real de Docker (no mockeada)
-  → Requiere setup separado, archivo e2e, DB de test levantada
+- Access token: JWT firmado, expira en 15 minutos. Payload: { sub, email, role }
+- Refresh token: JWT firmado, expira en 30 días. Almacenado en DB. Rotación en cada uso.
 
 ## Decisiones técnicas tomadas
 
 - Prisma 5.22.0 (no 7) por incompatibilidad con NestJS 11
-- Sin output personalizado en Prisma — usa @prisma/client directo
 - select explícito en todas las queries — nunca exponer password
-- Mismo mensaje 'Invalid credentials' para usuario no encontrado
-  y password incorrecto (evita user enumeration attack)
+- Mismo mensaje 'Invalid credentials' para usuario no encontrado y password incorrecto (evita user enumeration attack)
 - Refresh token guardado en DB para poder invalidarlo en logout
-- Access token: 15min, Refresh token: 30 días
+- JwtAuthGuard custom (sin Passport) — implementa CanActivate directamente
+- RolesGuard usa Reflector para leer metadata de @Roles()
+- Guards registrados como providers en AuthModule
 
-## Conceptos aprendidos hasta acá
+## Próximos pasos posibles
 
-- Módulos, Controllers, Services, DI en NestJS
-- Por qué @Injectable() y no @Service()
-- Por qué el constructor vacío con private readonly
-- Por qué PrismaModule tiene exports y HelloModule no
-- Por qué dos tokens (access corto + refresh largo)
-- User enumeration attack
-- bcrypt.compare() vs hashear y comparar
-- select explícito en Prisma vs borrar campo después
+- E2E tests (flujo completo contra DB real)
+- Swagger / OpenAPI
+- UsersModule: GET/PATCH/DELETE /api/v1/users/:id
+- Logout all: revocar todos los refresh tokens de un usuario
+
+## Metodología de testing
+
+- Un test a la vez: escribir un test → Red → implementar → Green → siguiente test
 
 ## Archivos de contexto
 
 - CLAUDE.md → instrucciones permanentes para Claude Code
-- CONTEXT.md → este archivo, actualizar al inicio de cada sesión
+- context.md → este archivo, actualizar al inicio de cada sesión
