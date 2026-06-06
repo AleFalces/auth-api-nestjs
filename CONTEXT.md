@@ -86,9 +86,9 @@ src/
 
 ## Próximos pasos posibles
 
+- CI/CD con GitHub Actions (correr tests + typecheck en cada push)
 - E2E tests (flujo completo contra DB real)
 - Swagger / OpenAPI
-- UsersModule: GET/PATCH/DELETE /api/v1/users/:id
 - Logout all: revocar todos los refresh tokens de un usuario
 
 ## Metodología de testing
