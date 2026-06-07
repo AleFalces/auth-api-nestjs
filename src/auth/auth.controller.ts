@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -9,6 +10,7 @@ import { RolesGuard } from './roles.guard';
 import { Roles } from './roles.decorator';
 import { CurrentUser } from './current-user.decorator';
 
+@ApiTags('auth')
 @Controller('api/v1/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -40,12 +42,14 @@ export class AuthController {
   @Post('logout-all')
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   logoutAll(@CurrentUser() user: { sub: string }) {
     return this.authService.logoutAll(user.sub);
   }
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   me(@CurrentUser() user: { sub: string }) {
     return this.authService.me(user.sub);
   }
@@ -53,6 +57,7 @@ export class AuthController {
   @Get('admin')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
+  @ApiBearerAuth()
   admin() {
     return { message: 'Admin access granted' };
   }
