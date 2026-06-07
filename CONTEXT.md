@@ -129,7 +129,7 @@ test/
 
 ## Próximos pasos posibles
 
-(ninguno anotado por ahora — el plan original del mes 1 está completo)
+- Editar el README para GitHub con la documentación de la API (hoy es el README genérico que viene del starter de NestJS — falta describir endpoints, stack, cómo levantar el proyecto y correr los tests)
 
 ## Metodología de testing
 
