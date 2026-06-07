@@ -86,6 +86,9 @@ src/
 ## Documentación
 
 - Swagger UI disponible en /docs
+- Endpoints agrupados con @ApiTags ('auth', 'users')
+- Rutas protegidas con @ApiBearerAuth (permite "Authorize" + probar desde la UI con el accessToken)
+- DTOs documentados con @ApiProperty / @ApiPropertyOptional (examples, minLength, opcionalidad)
 
 ## Tokens
 
