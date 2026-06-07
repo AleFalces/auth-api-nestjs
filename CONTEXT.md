@@ -1,6 +1,6 @@
 # Auth API NestJS — Estado del proyecto
 
-## Fecha: 2026-06-06
+## Fecha: 2026-06-07
 
 ## Contexto del plan
 
@@ -25,18 +25,20 @@ Branch actual: main
 
 ### Endpoints completados
 
-- POST /api/v1/auth/register ✅
-- POST /api/v1/auth/login ✅
-- POST /api/v1/auth/refresh ✅ (con rotación de refresh token)
-- POST /api/v1/auth/logout ✅
-- GET  /api/v1/auth/me ✅ (protegido con JwtAuthGuard)
-- GET  /api/v1/auth/admin ✅ (protegido con JwtAuthGuard + RolesGuard, rol ADMIN)
+- POST   /api/v1/auth/register ✅
+- POST   /api/v1/auth/login ✅
+- POST   /api/v1/auth/refresh ✅ (con rotación de refresh token)
+- POST   /api/v1/auth/logout ✅
+- POST   /api/v1/auth/logout-all ✅ (protegido con JwtAuthGuard, revoca todos los refresh tokens del usuario autenticado)
+- GET    /api/v1/auth/me ✅ (protegido con JwtAuthGuard)
+- GET    /api/v1/auth/admin ✅ (protegido con JwtAuthGuard + RolesGuard, rol ADMIN)
+- GET    /api/v1/users/:id ✅ (ADMIN only)
+- PATCH  /api/v1/users/:id ✅ (ADMIN only — actualiza name/email)
+- DELETE /api/v1/users/:id ✅ (ADMIN only — 204 No Content)
 
 ### Endpoints pendientes
 
-- GET    /api/v1/users/:id
-- PATCH  /api/v1/users/:id
-- DELETE /api/v1/users/:id
+(ninguno por ahora — ver "Próximos pasos posibles")
 
 ## Estructura de archivos
 
@@ -59,15 +61,31 @@ src/
     roles.guard.spec.ts        → 3 tests
     roles.decorator.ts         → @Roles(...roles)
     current-user.decorator.ts  → @CurrentUser() extrae user del request
+  users/
+    dto/
+      update-user.dto.ts       → name?, email? (ambos opcionales)
+    users.controller.ts        → GET/PATCH/DELETE :id, todos ADMIN only
+    users.service.ts           → findById, update, delete (con select explícito)
+    users.service.spec.ts      → 6 tests
+    users.module.ts
   app.module.ts
-  main.ts → ValidationPipe global
+  main.ts → ValidationPipe global, Swagger en /docs
 
 ## Tests
 
-- auth.service.spec.ts: 12 tests
+- auth.service.spec.ts: 13 tests
 - jwt-auth.guard.spec.ts: 3 tests
 - roles.guard.spec.ts: 3 tests
-- Total: 18 tests ✅
+- users.service.spec.ts: 6 tests
+- Total: 25 tests ✅
+
+## CI/CD
+
+- .github/workflows/ci.yml → corre typecheck + unit tests en cada push (incluye prisma generate)
+
+## Documentación
+
+- Swagger UI disponible en /docs
 
 ## Tokens
 
@@ -86,10 +104,7 @@ src/
 
 ## Próximos pasos posibles
 
-- CI/CD con GitHub Actions (correr tests + typecheck en cada push)
 - E2E tests (flujo completo contra DB real)
-- Swagger / OpenAPI
-- Logout all: revocar todos los refresh tokens de un usuario
 
 ## Metodología de testing
 
