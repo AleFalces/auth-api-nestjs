@@ -37,6 +37,13 @@ export class AuthController {
     return this.authService.logout(dto.token);
   }
 
+  @Post('logout-all')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(JwtAuthGuard)
+  logoutAll(@CurrentUser() user: { sub: string }) {
+    return this.authService.logoutAll(user.sub);
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard)
   me(@CurrentUser() user: { sub: string }) {

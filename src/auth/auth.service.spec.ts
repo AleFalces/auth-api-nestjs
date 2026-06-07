@@ -26,6 +26,7 @@ describe('AuthService', () => {
               create: jest.fn(),
               findUnique: jest.fn(),
               delete: jest.fn(),
+              deleteMany: jest.fn(),
             },
           },
         },
@@ -155,6 +156,19 @@ describe('AuthService', () => {
       expect(result).toBeUndefined();
       expect(prisma.refreshToken.delete).toHaveBeenCalledWith({
         where: { id: 'rt-1' },
+      });
+    });
+  });
+
+  describe('logoutAll', () => {
+    it('should delete all refresh tokens belonging to the user', async () => {
+      prisma.refreshToken.deleteMany.mockResolvedValue({ count: 3 });
+
+      const result = await service.logoutAll('cuid-123');
+
+      expect(result).toBeUndefined();
+      expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
+        where: { userId: 'cuid-123' },
       });
     });
   });

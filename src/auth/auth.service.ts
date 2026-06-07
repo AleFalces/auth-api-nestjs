@@ -76,6 +76,10 @@ export class AuthService {
     await this.prisma.refreshToken.delete({ where: { id: stored.id } });
   }
 
+  async logoutAll(userId: string) {
+    await this.prisma.refreshToken.deleteMany({ where: { userId } });
+  }
+
   async refresh(token: string) {
     const stored = await this.prisma.refreshToken.findUnique({
       where: { token },
