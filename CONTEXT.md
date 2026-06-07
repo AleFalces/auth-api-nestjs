@@ -71,13 +71,31 @@ src/
   app.module.ts
   main.ts → ValidationPipe global, Swagger en /docs
 
+test/
+  jest-e2e.json          → config de Jest para E2E (maxWorkers: 1, ver nota abajo)
+  jest-e2e.setup.ts      → carga .env.test con dotenv antes de correr los specs
+  auth.e2e-spec.ts       → 15 tests (register, login, me, refresh, logout, logout-all, admin)
+  users.e2e-spec.ts      → 9 tests (GET/PATCH/DELETE :id — ADMIN, no-ADMIN, no existe)
+
 ## Tests
+
+### Unitarios (mocks de Prisma/JwtService)
 
 - auth.service.spec.ts: 13 tests
 - jwt-auth.guard.spec.ts: 3 tests
 - roles.guard.spec.ts: 3 tests
 - users.service.spec.ts: 6 tests
-- Total: 25 tests ✅
+- Total unitarios: 25 tests ✅
+
+### E2E (HTTP real + Postgres real)
+
+- auth.e2e-spec.ts: 15 tests
+- users.e2e-spec.ts: 9 tests
+- Total E2E: 24 tests ✅
+- Corren contra una DB separada `auth_api_test` (mismo Postgres de Docker), configurada vía `.env.test`
+- `npm run test:e2e` (script ya existía en package.json, apuntando a test/jest-e2e.json)
+
+### Total general: 49 tests ✅
 
 ## CI/CD
 
@@ -104,10 +122,14 @@ src/
 - JwtAuthGuard custom (sin Passport) — implementa CanActivate directamente
 - RolesGuard usa Reflector para leer metadata de @Roles()
 - Guards registrados como providers en AuthModule
+- E2E contra DB de test separada (auth_api_test), no contra la de desarrollo — evita contaminar datos y permite limpiar tablas entre tests sin riesgo
+- jest-e2e.json con maxWorkers: 1 — los specs E2E comparten una sola DB; si Jest los corre en paralelo (default), sus afterEach (deleteMany) se pisan entre archivos y producen 500 aleatorios. Forzar ejecución serial los aísla
+- Refresh token incluye claim jti (crypto.randomUUID()) — sin esto, dos tokens firmados con el mismo payload { sub } en el mismo segundo (mismo iat) daban el mismo string firmado, rompiendo la "rotación". Lo encontró el E2E de refresh, no los unitarios (ahí JwtService.sign está mockeado y devuelve siempre el mismo string)
+- RolesGuard lee el rol desde el payload del JWT, no de la DB — promover a alguien a ADMIN no tiene efecto hasta que esa persona vuelva a loguearse (el rol viejo queda "congelado" en el access token vigente)
 
 ## Próximos pasos posibles
 
-- E2E tests (flujo completo contra DB real)
+(ninguno anotado por ahora — el plan original del mes 1 está completo)
 
 ## Metodología de testing
 
