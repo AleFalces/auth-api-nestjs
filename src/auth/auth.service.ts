@@ -3,6 +3,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -109,7 +110,7 @@ export class AuthService {
     );
 
     const newRefreshToken = this.jwtService.sign(
-      { sub: user.id },
+      { sub: user.id, jti: randomUUID() },
       { expiresIn: '30d' },
     );
 
@@ -149,7 +150,7 @@ export class AuthService {
     );
 
     const refreshTokenValue = this.jwtService.sign(
-      { sub: user.id },
+      { sub: user.id, jti: randomUUID() },
       { expiresIn: '30d' },
     );
 
